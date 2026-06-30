@@ -1,0 +1,13 @@
+package com.example.SansaWeigh;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class SansaWeighApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(SansaWeighApplication.class, args);
+	}
+
+}
