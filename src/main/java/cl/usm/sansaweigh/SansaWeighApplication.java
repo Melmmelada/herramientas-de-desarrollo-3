@@ -1,4 +1,4 @@
-package com.example.SansaWeigh;
+package cl.usm.sansaweigh;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,4 +1,4 @@
-package com.example.SansaWeigh;
+package cl.usm.SansaWeigh;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
