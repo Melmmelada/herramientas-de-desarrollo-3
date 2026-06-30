@@ -1,52 +1,60 @@
 package cl.usm.sansaweigh.controller;
 
-import cl.usm.sansaweigh.model.EstadoPesaje;
-import cl.usm.sansaweigh.model.CategoriaPeso;
-import cl.usm.sansaweigh.model.RegistroPesaje;
-import cl.usm.sansaweigh.repository.RegistroPesajeRepository;
+import cl.usm.sansaweigh.dto.RegistroPesajeRequestDTO;
+import cl.usm.sansaweigh.dto.RegistroPesajeResponseDTO;
+import cl.usm.sansaweigh.dto.TransicionEstadoDTO;
 import cl.usm.sansaweigh.service.PesajeService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/pesajes")
+@RequestMapping("/api/v1/registros")
 @RequiredArgsConstructor
+@Tag(name = "Registros de Pesaje", description = "Gestión de pesaje SansaWeigh")
 public class RegistroPesajeController {
 
-    private final RegistroPesajeRepository repository;
-    private final PesajeService service;
+    private final PesajeService pesajeService;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public RegistroPesaje crear(@RequestBody RegistroPesaje registro) {
-        registro.setCategoriaPeso(service.clasificarPaquete(registro.getPesoSansas()).name());
-        service.validarRestricciones(
-                CategoriaPeso.valueOf(registro.getCategoriaPeso()),
-                registro.getBalanzaId(),
-                LocalDateTime.now()
-        );
-        registro.setEstadoActual(EstadoPesaje.INGRESADO.name());
-        return repository.save(registro);
+    @Operation(summary = "Crear un nuevo registro de pesaje")
+    public ResponseEntity<RegistroPesajeResponseDTO> crear(
+            @Valid @RequestBody RegistroPesajeRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(pesajeService.crear(dto));
     }
 
-    @PutMapping("/{id}/estado")
-    public RegistroPesaje actualizarEstado(@PathVariable String id, @RequestParam EstadoPesaje nuevoEstado) {
-        RegistroPesaje registro = repository.findById(id).orElseThrow(() -> new RuntimeException("Error 404"));
-        service.validarTransicion(EstadoPesaje.valueOf(registro.getEstadoActual()), nuevoEstado);
-        registro.setEstadoActual(nuevoEstado.name());
-        return repository.save(registro);
+    @PatchMapping("/{id}/estado")
+    @Operation(summary = "Actualizar estado del registro")
+    public ResponseEntity<RegistroPesajeResponseDTO> actualizarEstado(
+            @PathVariable String id,
+            @Valid @RequestBody TransicionEstadoDTO dto) {
+        return ResponseEntity.ok(pesajeService.actualizarEstado(id, dto));
     }
 
     @GetMapping
-    public List<RegistroPesaje> obtenerPorFecha(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
-        return repository.findByCreatedAtBetween(fecha.atStartOfDay(), fecha.atTime(LocalTime.MAX));
+    @Operation(summary = "Obtener registros con filtro opcional por fecha")
+    public ResponseEntity<List<RegistroPesajeResponseDTO>> obtener(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta) {
+        if (desde != null && hasta != null) {
+            return ResponseEntity.ok(pesajeService.obtenerPorFecha(desde, hasta));
+        }
+        return ResponseEntity.ok(pesajeService.obtenerTodos());
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Obtener un registro por su ID")
+    public ResponseEntity<RegistroPesajeResponseDTO> obtenerPorId(@PathVariable String id) {
+        return ResponseEntity.ok(pesajeService.obtenerPorId(id));
     }
 }
